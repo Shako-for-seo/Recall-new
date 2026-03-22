@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Recall — Video Meeting Notebook</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e2a;
+    --border: rgba(255,255,255,0.07);
+    --accent: #6ee7b7;
+    --accent2: #818cf8;
+    --accent3: #f472b6;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --danger: #f87171;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .logo {
+    padding: 24px 20px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .logo-icon {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  .logo-text {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+    color: #fff;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .sidebar-section {
+    padding: 16px 12px 8px;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .meeting-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0 8px;
+  }
+
+  .meeting-list::-webkit-scrollbar { width: 4px; }
+  .meeting-list::-webkit-scrollbar-track { background: transparent; }
+  .meeting-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .meeting-item {
+    padding: 10px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 2px;
+    transition: background 0.15s;
+    border: 1px solid transparent;
+  }
+
+  .meeting-item:hover { background: var(--surface2); }
+  .meeting-item.active {
+    background: var(--surface2);
+    border-color: var(--border);
+  }
+
+  .meeting-item .mtitle {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+
+  .meeting-item .mmeta {
+    font-size: 10px;
+    color: var(--muted);
+    display: flex; gap: 8px; align-items: center;
+  }
+
+  .badge {
+    font-size: 9px;
+    padding: 1px 6px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .badge-zoom { background: rgba(45,132,230,0.2); color: #60a5fa; }
+  .badge-gmeet { background: rgba(52,168,83,0.2); color: #4ade80; }
+  .badge-teams { background: rgba(99,91,255,0.2); color: var(--accent2); }
+
+  .sidebar-bottom {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .record-btn {
+    width: 100%;
+    padding: 10px;
+    background: linear-gradient(135deg, #6ee7b7, #818cf8);
+    border: none;
+    border-radius: 8px;
+    color: #0d0f14;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: opacity 0.2s;
+  }
+  .record-btn:hover { opacity: 0.85; }
+
+  /* ── MAIN ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .topbar {
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface);
+  }
+
+  .meeting-title-area { display: flex; flex-direction: column; gap: 4px; }
+
+  .meeting-main-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    color: #fff;
+  }
+
+  .meeting-date {
+    font-size: 11px;
+    color: var(--muted);
+    display: flex; gap: 12px; align-items: center;
+  }
+
+  .dot { width: 4px; height: 4px; background: var(--muted); border-radius: 50%; }
+
+  .topbar-actions { display: flex; gap: 8px; align-items: center; }
+
+  .icon-btn {
+    width: 36px; height: 36px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px;
+    transition: all 0.15s;
+    color: var(--muted);
+  }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── TAB BAR ── */
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 28px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    padding: 12px 18px;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    color: var(--muted);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-count {
+    font-size: 10px;
+    background: var(--surface2);
+    padding: 1px 6px;
+    border-radius: 10px;
+    color: var(--muted);
+  }
+
+  /* ── CONTENT ── */
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px;
+    display: flex;
+    gap: 24px;
+  }
+
+  .content::-webkit-scrollbar { width: 4px; }
+  .content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* ── PANEL TABS ── */
+  .panel-left { flex: 1; min-width: 0; }
+  .panel-right { width: 300px; min-width: 300px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* ── SUMMARY ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--text);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title-icon { color: var(--accent); }
+
+  .summary-text {
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #cbd5e1;
+  }
+
+  /* ── ACTION ITEMS ── */
+  .action-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .action-item:last-child { border-bottom: none; }
+
+  .action-check {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid var(--border);
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .action-check.checked {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0d0f14;
+    font-size: 10px;
+  }
+
+  .action-text {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.5;
+    flex: 1;
+  }
+  .action-text.done { text-decoration: line-through; color: var(--muted); }
+
+  .action-owner {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--surface2);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  /* ── TRANSCRIPT ── */
+  .transcript-search {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .search-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--muted); }
+
+  .transcript-entries { display: flex; flex-direction: column; gap: 0; }
+
+  .transcript-entry {
+    display: flex;
+    gap: 14px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.1s;
+    border-radius: 4px;
+    padding-left: 4px;
+  }
+  .transcript-entry:hover { background: var(--surface2); padding-left: 8px; }
+  .transcript-entry:last-child { border-bottom: none; }
+
+  .ts-time {
+    font-size: 11px;
+    color: var(--accent);
+    min-width: 48px;
+    padding-top: 2px;
+    font-weight: 500;
+  }
+
+  .ts-body { flex: 1; }
+
+  .ts-speaker {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+
+  .ts-text {
+    font-family: 'Lora', serif;
+    font-size: 13px;
+    color: #94a3b8;
+    line-height: 1.6;
+  }
+
+  .ts-highlight { background: rgba(110,231,183,0.2); color: var(--accent); border-radius: 2px; padding: 0 2px; }
+
+  /* ── NOTES ── */
+  .notes-editor {
+    width: 100%;
+    min-height: 200px;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-family: 'Lora', serif;
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.9;
+    resize: none;
+  }
+  .notes-editor::placeholder { color: var(--muted); }
+
+  /* ── RECALL / AI ── */
+  .recall-box {
+    background: linear-gradient(135deg, rgba(110,231,183,0.05), rgba(129,140,248,0.05));
+    border: 1px solid rgba(110,231,183,0.2);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .recall-label {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .recall-input-row {
+    display: flex;
+    gap: 8px;
+  }
+
+  .recall-input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid rgba(110,231,183,0.3);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    outline: none;
+  }
+  .recall-input::placeholder { color: var(--muted); }
+
+  .recall-btn {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 8px;
+    padding: 9px 14px;
+    color: #0d0f14;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: opacity 0.2s;
+  }
+  .recall-btn:hover { opacity: 0.85; }
+  .recall-btn:disabled { opacity: 0.5; cursor: default; }
+
+  .recall-answer {
+    margin-top: 12px;
+    font-family: 'Lora', serif;
+    font-size: 13px;
+    color: #cbd5e1;
+    line-height: 1.8;
+    display: none;
+    padding: 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border-left: 3px solid var(--accent);
+  }
+
+  /* ── RIGHT PANEL ── */
+  .stat-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 0;
+  }
+
+  .stat-card {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 12px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.5px;
+  }
+
+  .speaker-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .speaker-item:last-child { border-bottom: none; }
+
+  .speaker-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  .speaker-name { font-size: 12px; flex: 1; }
+
+  .speaker-bar-wrap { flex: 1; height: 4px; background: var(--surface2); border-radius: 2px; }
+  .speaker-bar { height: 100%; border-radius: 2px; }
+
+  .speaker-pct { font-size: 11px; color: var(--muted); min-width: 30px; text-align: right; }
+
+  /* ── LOADING ── */
+  .loading-dots span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: bounce 1.2s infinite;
+    margin: 0 2px;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ── ACTIVE TAB PANELS ── */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── FADE IN ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card { animation: fadeUp 0.3s ease both; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">🎙</div>
+    <div class="logo-text">re<span>call</span></div>
+  </div>
+  <div class="sidebar-section">Recent Meetings</div>
+  <div class="meeting-list">
+    <div class="meeting-item active" onclick="switchMeeting(this, 0)">
+      <div class="mtitle">Q2 Product Roadmap</div>
+      <div class="mmeta"><span class="badge badge-zoom">Zoom</span> Mar 21 · 54m</div>
+    </div>
+    <div class="meeting-item" onclick="switchMeeting(this, 1)">
+      <div class="mtitle">Design Review — v3.2</div>
+      <div class="mmeta"><span class="badge badge-gmeet">Meet</span> Mar 19 · 38m</div>
+    </div>
+    <div class="meeting-item" onclick="switchMeeting(this, 2)">
+      <div class="mtitle">Investor Update Call</div>
+      <div class="mmeta"><span class="badge badge-teams">Teams</span> Mar 17 · 1h 12m</div>
+    </div>
+    <div class="meeting-item" onclick="switchMeeting(this, 3)">
+      <div class="mtitle">Engineering Standup</div>
+      <div class="mmeta"><span class="badge badge-gmeet">Meet</span> Mar 17 · 22m</div>
+    </div>
+    <div class="meeting-item" onclick="switchMeeting(this, 4)">
+      <div class="mtitle">Sales Pipeline Review</div>
+      <div class="mmeta"><span class="badge badge-zoom">Zoom</span> Mar 15 · 47m</div>
+    </div>
+    <div class="meeting-item" onclick="switchMeeting(this, 5)">
+      <div class="mtitle">Customer Onboarding — Acme</div>
+      <div class="mmeta"><span class="badge badge-zoom">Zoom</span> Mar 14 · 31m</div>
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <button class="record-btn">⬤ New Recording</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="meeting-title-area">
+      <div class="meeting-main-title" id="meetingTitle">Q2 Product Roadmap</div>
+      <div class="meeting-date">
+        <span id="meetingDate">March 21, 2026</span>
+        <div class="dot"></div>
+        <span id="meetingDuration">54 minutes</span>
+        <div class="dot"></div>
+        <span id="meetingPlatform" class="badge badge-zoom">Zoom</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" title="Share">🔗</button>
+      <button class="icon-btn" title="Export">⬇</button>
+      <button class="icon-btn" title="More">⋯</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('summary', this)">✦ Summary</div>
+    <div class="tab" onclick="switchTab('actions', this)">☑ Actions <span class="tab-count" id="actionCount">5</span></div>
+    <div class="tab" onclick="switchTab('transcript', this)">📄 Transcript</div>
+    <div class="tab" onclick="switchTab('notes', this)">📝 Notes</div>
+    <div class="tab" onclick="switchTab('recall', this)">🔍 AI Recall</div>
+  </div>
+
+  <div class="content">
+    <div class="panel-left">
+
+      <!-- SUMMARY TAB -->
+      <div class="tab-panel active" id="tab-summary">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="card-title-icon">✦</span> Meeting Summary</div>
+          </div>
+          <p class="summary-text" id="summaryText">
+            The team reviewed the Q2 product roadmap with a focus on shipping the new onboarding flow and analytics dashboard by end of April. Sarah presented revised timelines, acknowledging a two-week delay in the data pipeline work due to infrastructure dependencies. The group aligned on deprioritizing the mobile push notification feature until Q3 to stay focused. Marcus raised concerns about API rate limits affecting enterprise clients, which will be escalated to the platform team. Next steps include finalizing the spec doc by Friday and scheduling a follow-up with design.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="card-title-icon" style="color:var(--accent2)">◈</span> Key Topics</div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px" id="topicsArea">
+            <span style="background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.25);color:var(--accent);padding:5px 12px;border-radius:20px;font-size:12px">Onboarding Flow</span>
+            <span style="background:rgba(129,140,248,0.1);border:1px solid rgba(129,140,248,0.25);color:var(--accent2);padding:5px 12px;border-radius:20px;font-size:12px">Analytics Dashboard</span>
+            <span style="background:rgba(244,114,182,0.1);border:1px solid rgba(244,114,182,0.25);color:var(--accent3);padding:5px 12px;border-radius:20px;font-size:12px">API Rate Limits</span>
+            <span style="background:rgba(110,231,183,0.1);border:1px solid rgba(110,231,183,0.25);color:var(--accent);padding:5px 12px;border-radius:20px;font-size:12px">Timeline Review</span>
+            <span style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);color:var(--danger);padding:5px 12px;border-radius:20px;font-size:12px">Mobile Push (Deprio)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIONS TAB -->
+      <div class="tab-panel" id="tab-actions">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="card-title-icon">☑</span> Action Items</div>
+          </div>
+          <div id="actionsList"></div>
+        </div>
+      </div>
+
+      <!-- TRANSCRIPT TAB -->
+      <div class="tab-panel" id="tab-transcript">
+        <div class="transcript-search">
+          <input class="search-input" type="text" placeholder="Search transcript…" oninput="searchTranscript(this.value)" id="transcriptSearch">
+        </div>
+        <div class="transcript-entries" id="transcriptList"></div>
+      </div>
+
+      <!-- NOTES TAB -->
+      <div class="tab-panel" id="tab-notes">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title"><span class="card-title-icon">📝</span> My Notes</div>
+            <span style="font-size:11px;color:var(--muted)">Auto-saved</span>
+          </div>
+          <textarea class="notes-editor" id="notesEditor" placeholder="Start typing your notes here…&#10;&#10;Use this space for personal annotations, follow-up thoughts, or anything you want to remember from this meeting."></textarea>
+        </div>
+      </div>
+
+      <!-- AI RECALL TAB -->
+      <div class="tab-panel" id="tab-recall">
+        <div class="recall-box">
+          <div class="recall-label">⚡ AI Recall — Ask anything about this meeting</div>
+          <div class="recall-input-row">
+            <input class="recall-input" id="recallInput" type="text" placeholder="e.g. What did Marcus say about API limits?" onkeydown="if(event.key==='Enter') askRecall()">
+            <button class="recall-btn" id="recallBtn" onclick="askRecall()">
+              Ask ✦
+            </button>
+          </div>
+          <div class="recall-answer" id="recallAnswer"></div>
+        </div>
+        <div class="card" style="margin-top:4px">
+          <div class="card-header">
+            <div class="card-title"><span style="color:var(--accent2)">◈</span> Suggested Questions</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div class="suggested-q" onclick="setRecallQ('What decisions were made in this meeting?')">What decisions were made in this meeting?</div>
+            <div class="suggested-q" onclick="setRecallQ('Who owns the spec doc task?')">Who owns the spec doc task?</div>
+            <div class="suggested-q" onclick="setRecallQ('Why was mobile push notifications deprioritized?')">Why was mobile push notifications deprioritized?</div>
+            <div class="suggested-q" onclick="setRecallQ('What is the timeline for the analytics dashboard?')">What is the timeline for the analytics dashboard?</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="panel-right">
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-value" id="statDur">54m</div>
+          <div class="stat-label">Duration</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statWords">4.2k</div>
+          <div class="stat-label">Words</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="statSpk">4</div>
+          <div class="stat-label">Speakers</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:0">
+        <div class="card-header">
+          <div class="card-title"><span style="color:var(--accent3)">◉</span> Talk Time</div>
+        </div>
+        <div id="speakersPanel"></div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<style>
+  .suggested-q {
+    font-size: 12px;
+    color: var(--muted);
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .suggested-q:hover { border-color: var(--accent2); color: var(--accent2); }
+</style>
+
+<script>
+const meetings = [
+  {
+    title: "Q2 Product Roadmap",
+    date: "March 21, 2026", duration: "54 minutes", platform: "Zoom", platformClass: "badge-zoom",
+    stats: { dur: "54m", words: "4.2k", spk: 4 },
+    summary: "The team reviewed the Q2 product roadmap with a focus on shipping the new onboarding flow and analytics dashboard by end of April. Sarah presented revised timelines, acknowledging a two-week delay in the data pipeline work due to infrastructure dependencies. The group aligned on deprioritizing the mobile push notification feature until Q3 to stay focused. Marcus raised concerns about API rate limits affecting enterprise clients, which will be escalated to the platform team. Next steps include finalizing the spec doc by Friday and scheduling a follow-up with design.",
+    topics: [
+      {label:"Onboarding Flow", color:"accent"}, {label:"Analytics Dashboard", color:"accent2"},
+      {label:"API Rate Limits", color:"accent3"}, {label:"Timeline Review", color:"accent"},
+      {label:"Mobile Push (Deprio)", color:"danger"}
+    ],
+    actions: [
+      { text: "Finalize spec doc for onboarding flow", owner: "Sarah", done: false },
+      { text: "Escalate API rate limit concerns to platform team", owner: "Marcus", done: false },
+      { text: "Schedule design follow-up meeting", owner: "Jamie", done: true },
+      { text: "Update Q3 backlog with mobile push feature", owner: "Sarah", done: false },
+      { text: "Share revised timeline with stakeholders", owner: "Marcus", done: false }
+    ],
+    transcript: [
+      { time: "0:00", speaker: "Sarah Chen", text: "Alright, let's get started. I want to walk everyone through where we are on the Q2 roadmap and flag a few things that need decisions today." },
+      { time: "1:44", speaker: "Marcus Reed", text: "Before you do — I wanted to flag something about the API rate limits. We've been seeing enterprise clients hit ceilings during peak hours and it's starting to affect retention." },
+      { time: "3:12", speaker: "Sarah Chen", text: "Good to know, let's make sure we put that in the follow-up items. So the onboarding flow — I'm targeting end of April for the first release. We've slipped two weeks on the data pipeline but everything else is on track." },
+      { time: "8:55", speaker: "Jamie Park", text: "The design work is basically done, we just need the final approval from product on the empty states and error flows." },
+      { time: "12:30", speaker: "Sarah Chen", text: "Got it. And on the analytics dashboard — we're still on schedule for April 28th. The backend integration is about 60% done." },
+      { time: "19:07", speaker: "Tom Liu", text: "What about mobile push notifications? I know that was on the Q2 list originally." },
+      { time: "20:14", speaker: "Sarah Chen", text: "We're moving that to Q3. The team bandwidth isn't there and I'd rather ship the core features well than spread thin. Everyone aligned on that?" },
+      { time: "21:00", speaker: "Marcus Reed", text: "Yeah that makes sense. I'll update the backlog." }
+    ],
+    speakers: [
+      { name: "Sarah Chen", initials: "SC", pct: 48, color: "var(--accent)" },
+      { name: "Marcus Reed", initials: "MR", pct: 27, color: "var(--accent2)" },
+      { name: "Jamie Park", initials: "JP", pct: 15, color: "var(--accent3)" },
+      { name: "Tom Liu", initials: "TL", pct: 10, color: "#fb923c" }
+    ],
+    context: "Meeting about Q2 product roadmap. Sarah Chen led the meeting. Key decisions: deprioritize mobile push to Q3, ship onboarding flow and analytics dashboard by end of April. Marcus raised API rate limits issue for enterprise clients. Jamie said design for onboarding is done, needs final product approval on empty states. Tom asked about mobile push. Data pipeline is 2 weeks behind."
+  },
+  {
+    title: "Design Review — v3.2",
+    date: "March 19, 2026", duration: "38 minutes", platform: "Meet", platformClass: "badge-gmeet",
+    stats: { dur: "38m", words: "2.9k", spk: 3 },
+    summary: "Jamie walked the team through the v3.2 design system updates including new component variants, updated color tokens, and a revised grid. The main discussion focused on dark mode consistency across mobile and web. Alex proposed using a shared token library to reduce drift. The team agreed to run a design audit the following week before handing off to engineering.",
+    topics: [
+      {label:"Design System", color:"accent"}, {label:"Dark Mode", color:"accent2"},
+      {label:"Token Library", color:"accent3"}, {label:"Audit", color:"accent"}
+    ],
+    actions: [
+      { text: "Run design audit across all screens", owner: "Jamie", done: false },
+      { text: "Propose shared token library structure", owner: "Alex", done: false },
+      { text: "Update Figma with new color tokens", owner: "Jamie", done: true }
+    ],
+    transcript: [
+      { time: "0:00", speaker: "Jamie Park", text: "Let me share my screen. So the main changes in v3.2 are the new button variants and an updated color ramp for dark mode." },
+      { time: "4:20", speaker: "Alex Nguyen", text: "The dark mode surfaces look much better. I'm still seeing inconsistency between the mobile nav and the web sidebar though." },
+      { time: "9:10", speaker: "Jamie Park", text: "Yeah that's a known issue — the tokens aren't synced yet. I was actually thinking we should build a shared token library to prevent this kind of drift." },
+      { time: "15:00", speaker: "Priya Shah", text: "That's a great idea, it'll save us so much time in the long run. When can we do a proper audit?" },
+    ],
+    speakers: [
+      { name: "Jamie Park", initials: "JP", pct: 52, color: "var(--accent)" },
+      { name: "Alex Nguyen", initials: "AN", pct: 30, color: "var(--accent2)" },
+      { name: "Priya Shah", initials: "PS", pct: 18, color: "var(--accent3)" }
+    ],
+    context: "Design review meeting for v3.2. Jamie Park led. Discussed design system, dark mode inconsistency between mobile and web. Alex proposed shared token library. Plan to do a design audit next week."
+  },
+  {
+    title: "Investor Update Call",
+    date: "March 17, 2026", duration: "1h 12m", platform: "Teams", platformClass: "badge-teams",
+    stats: { dur: "72m", words: "6.8k", spk: 5 },
+    summary: "Leadership presented Q1 results to the investor group, highlighting 34% YoY revenue growth and strong enterprise pipeline. The team walked through unit economics improvements and highlighted the reduction in CAC. Questions focused on competitive dynamics and the international expansion timeline. Investors were broadly positive but asked for more detail on churn by segment for the next update.",
+    topics: [
+      {label:"Q1 Results", color:"accent"}, {label:"Revenue Growth", color:"accent2"},
+      {label:"Enterprise Pipeline", color:"accent"}, {label:"CAC Reduction", color:"accent3"},
+      {label:"International Expansion", color:"danger"}
+    ],
+    actions: [
+      { text: "Prepare churn breakdown by segment", owner: "Finance", done: false },
+      { text: "Send follow-up deck with international roadmap", owner: "CEO", done: false },
+      { text: "Schedule next investor update for May", owner: "EA", done: true }
+    ],
+    transcript: [
+      { time: "0:00", speaker: "CEO", text: "Thanks everyone for joining. I'll start with the Q1 highlights and then open it up for questions." },
+      { time: "5:30", speaker: "CFO", text: "Revenue grew 34% year over year, and we're seeing strong expansion revenue from existing enterprise accounts." },
+      { time: "22:00", speaker: "Investor A", text: "Can you walk us through the CAC trends? We're seeing cost inflation across the board in SaaS." },
+      { time: "35:00", speaker: "CEO", text: "Great question. Our blended CAC actually came down 18% this quarter primarily due to improved product-led growth and referral loops." }
+    ],
+    speakers: [
+      { name: "CEO", initials: "CE", pct: 38, color: "var(--accent)" },
+      { name: "CFO", initials: "CF", pct: 25, color: "var(--accent2)" },
+      { name: "Investor A", initials: "IA", pct: 20, color: "var(--accent3)" },
+      { name: "Investor B", initials: "IB", pct: 12, color: "#fb923c" },
+      { name: "COO", initials: "CO", pct: 5, color: "#a78bfa" }
+    ],
+    context: "Investor update call. Q1 results: 34% YoY revenue growth, enterprise pipeline strong, CAC down 18%. Investors asked about churn by segment and international expansion timeline."
+  },
+  {
+    title: "Engineering Standup",
+    date: "March 17, 2026", duration: "22 minutes", platform: "Meet", platformClass: "badge-gmeet",
+    stats: { dur: "22m", words: "1.4k", spk: 4 },
+    summary: "Daily standup. Team reported mostly green status. The main blocker was a flaky CI pipeline failing on the auth service tests. Tom is investigating a possible environment variable misconfiguration. Sprint ends Thursday — two tickets remain in progress.",
+    topics: [
+      {label:"CI Pipeline", color:"danger"}, {label:"Auth Service", color:"accent2"},
+      {label:"Sprint Status", color:"accent"}
+    ],
+    actions: [
+      { text: "Investigate flaky CI auth service tests", owner: "Tom", done: false },
+      { text: "Close remaining 2 sprint tickets by Thursday", owner: "Team", done: false }
+    ],
+    transcript: [
+      { time: "0:00", speaker: "Tom Liu", text: "Morning all. Quick status: I'm blocked on the auth service tests, CI is failing intermittently. Looking at an env var issue." },
+      { time: "3:15", speaker: "Priya Shah", text: "I finished the data model migration. PR is up for review, should be a quick one." },
+      { time: "6:00", speaker: "Alex Nguyen", text: "Working on the export feature, should be done by EOD. No blockers." }
+    ],
+    speakers: [
+      { name: "Tom Liu", initials: "TL", pct: 40, color: "var(--accent)" },
+      { name: "Priya Shah", initials: "PS", pct: 30, color: "var(--accent2)" },
+      { name: "Alex Nguyen", initials: "AN", pct: 20, color: "var(--accent3)" },
+      { name: "Jamie Park", initials: "JP", pct: 10, color: "#fb923c" }
+    ],
+    context: "Engineering standup. Tom blocked on CI auth service tests (env var issue). Priya finished data model migration, PR up. Alex working on export feature. Sprint ends Thursday."
+  },
+  {
+    title: "Sales Pipeline Review",
+    date: "March 15, 2026", duration: "47 minutes", platform: "Zoom", platformClass: "badge-zoom",
+    stats: { dur: "47m", words: "3.5k", spk: 4 },
+    summary: "Sales team reviewed the pipeline for Q2 close. Three enterprise deals are in final contract stage worth a combined $420k ARR. Two deals slipped from Q1 are at risk due to procurement delays. The team debated whether to push aggressive discounting to accelerate closes or hold on price. Decision was made to hold pricing but offer extended onboarding support as a sweetener.",
+    topics: [
+      {label:"Enterprise Pipeline", color:"accent"}, {label:"Procurement Delays", color:"danger"},
+      {label:"Pricing Strategy", color:"accent2"}, {label:"Q2 Close", color:"accent3"}
+    ],
+    actions: [
+      { text: "Send extended onboarding offer to at-risk deals", owner: "Sales", done: false },
+      { text: "Update CRM with revised close dates", owner: "Sales Ops", done: false },
+      { text: "Prepare $420k ARR contract documents", owner: "Legal", done: true }
+    ],
+    transcript: [
+      { time: "0:00", speaker: "Head of Sales", text: "Let's go deal by deal. Starting with Vertex Corp — we're in legal review, expect signature by March 22nd." },
+      { time: "8:00", speaker: "AE 1", text: "Thornton Industries is at risk. Their procurement team pushed us to May and the champion is going on parental leave." },
+      { time: "15:30", speaker: "Head of Sales", text: "Okay. Do we discount to close before the leave or hold price and offer extended onboarding?" },
+      { time: "18:00", speaker: "VP Revenue", text: "Hold price. Discounting sets a bad precedent for expansion. Let's offer them premium onboarding instead." }
+    ],
+    speakers: [
+      { name: "Head of Sales", initials: "HS", pct: 45, color: "var(--accent)" },
+      { name: "VP Revenue", initials: "VR", pct: 28, color: "var(--accent2)" },
+      { name: "AE 1", initials: "A1", pct: 16, color: "var(--accent3)" },
+      { name: "Sales Ops", initials: "SO", pct: 11, color: "#fb923c" }
+    ],
+    context: "Sales pipeline review. Three enterprise deals worth $420k ARR in final stage. Thornton Industries at risk due to procurement delay and champion going on parental leave. Decision: hold pricing, offer extended onboarding. Vertex Corp signature expected March 22nd."
+  },
+  {
+    title: "Customer Onboarding — Acme",
+    date: "March 14, 2026", duration: "31 minutes", platform: "Zoom", platformClass: "badge-zoom",
+    stats: { dur: "31m", words: "2.1k", spk: 3 },
+    summary: "Onboarding call with Acme Corp's admin team. Walked through workspace setup, SSO configuration, and user provisioning. Acme's IT team had questions about data residency and SCIM integration. Follow-up required with the security team to confirm EU data residency support. User training session scheduled for next Tuesday.",
+    topics: [
+      {label:"SSO Setup", color:"accent"}, {label:"SCIM Integration", color:"accent2"},
+      {label:"Data Residency", color:"accent3"}, {label:"User Training", color:"accent"}
+    ],
+    actions: [
+      { text: "Confirm EU data residency support with security team", owner: "CSM", done: false },
+      { text: "Send SCIM integration docs to Acme IT", owner: "CSM", done: true },
+      { text: "Schedule user training session — Tuesday Mar 25", owner: "CSM", done: false }
+    ],
+    transcript: [
+      { time: "0:00", speaker: "CSM", text: "Welcome to Recall, really excited to get Acme set up today. Let me start with workspace configuration." },
+      { time: "5:00", speaker: "Acme IT Lead", text: "Before we dive in — our legal team flagged a question about data residency. We need everything in EU servers." },
+      { time: "7:30", speaker: "CSM", text: "Totally understand. I'll confirm with our security team today and send you written confirmation. Our EU region is fully operational." },
+      { time: "18:00", speaker: "Acme Admin", text: "Can we use SCIM for user provisioning? We manage 800 users through Okta." }
+    ],
+    speakers: [
+      { name: "CSM", initials: "CS", pct: 50, color: "var(--accent)" },
+      { name: "Acme IT Lead", initials: "IT", pct: 30, color: "var(--accent2)" },
+      { name: "Acme Admin", initials: "AA", pct: 20, color: "var(--accent3)" }
+    ],
+    context: "Onboarding call with Acme Corp. Discussed SSO, SCIM (they use Okta, 800 users), data residency (need EU). CSM to confirm EU support. SCIM docs sent. User training scheduled Tuesday March 25."
+  }
+];
+
+let currentMeeting = 0;
+let activeTab = 'summary';
+
+function renderMeeting(idx) {
+  const m = meetings[idx];
+  document.getElementById('meetingTitle').textContent = m.title;
+  document.getElementById('meetingDate').textContent = m.date;
+  document.getElementById('meetingDuration').textContent = m.duration;
+  const plEl = document.getElementById('meetingPlatform');
+  plEl.textContent = m.platform;
+  plEl.className = 'badge ' + m.platformClass;
+
+  document.getElementById('statDur').textContent = m.stats.dur;
+  document.getElementById('statWords').textContent = m.stats.words;
+  document.getElementById('statSpk').textContent = m.stats.spk;
+
+  document.getElementById('summaryText').textContent = m.summary;
+  document.getElementById('actionCount').textContent = m.actions.length;
+
+  renderActions(m.actions);
+  renderTranscript(m.transcript, '');
+  renderSpeakers(m.speakers);
+
+  document.getElementById('recallAnswer').style.display = 'none';
+  document.getElementById('recallInput').value = '';
+  document.getElementById('notesEditor').value = '';
+}
+
+function renderActions(actions) {
+  const el = document.getElementById('actionsList');
+  el.innerHTML = actions.map((a, i) => `
+    <div class="action-item">
+      <div class="action-check ${a.done ? 'checked' : ''}" onclick="toggleAction(${i})">
+        ${a.done ? '✓' : ''}
+      </div>
+      <div class="action-text ${a.done ? 'done' : ''}" id="at-${i}">${a.text}</div>
+      <div class="action-owner">${a.owner}</div>
+    </div>
+  `).join('');
+}
+
+function toggleAction(i) {
+  meetings[currentMeeting].actions[i].done = !meetings[currentMeeting].actions[i].done;
+  renderActions(meetings[currentMeeting].actions);
+}
+
+function renderTranscript(entries, query) {
+  const el = document.getElementById('transcriptList');
+  el.innerHTML = entries.map(e => {
+    let text = e.text;
+    if (query) {
+      const re = new RegExp(`(${query})`, 'gi');
+      text = text.replace(re, '<span class="ts-highlight">$1</span>');
+    }
+    return `
+      <div class="transcript-entry">
+        <div class="ts-time">${e.time}</div>
+        <div class="ts-body">
+          <div class="ts-speaker">${e.speaker}</div>
+          <div class="ts-text">${text}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function searchTranscript(val) {
+  renderTranscript(meetings[currentMeeting].transcript, val);
+}
+
+function renderSpeakers(speakers) {
+  const el = document.getElementById('speakersPanel');
+  const colors = ['var(--accent)', 'var(--accent2)', 'var(--accent3)', '#fb923c', '#a78bfa'];
+  el.innerHTML = speakers.map((s, i) => `
+    <div class="speaker-item">
+      <div class="speaker-avatar" style="background:${s.color}22;color:${s.color}">${s.initials}</div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <div class="speaker-name">${s.name}</div>
+          <div class="speaker-pct">${s.pct}%</div>
+        </div>
+        <div class="speaker-bar-wrap">
+          <div class="speaker-bar" style="width:${s.pct}%;background:${s.color}"></div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function switchTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  activeTab = tab;
+}
+
+function switchMeeting(el, idx) {
+  document.querySelectorAll('.meeting-item').forEach(m => m.classList.remove('active'));
+  el.classList.add('active');
+  currentMeeting = idx;
+  renderMeeting(idx);
+}
+
+function setRecallQ(q) {
+  document.getElementById('recallInput').value = q;
+  // auto-switch to recall tab
+  const tabs = document.querySelectorAll('.tab');
+  tabs.forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  // find recall tab (index 4)
+  tabs[4].classList.add('active');
+  document.getElementById('tab-recall').classList.add('active');
+}
+
+async function askRecall() {
+  const input = document.getElementById('recallInput');
+  const btn = document.getElementById('recallBtn');
+  const answerEl = document.getElementById('recallAnswer');
+  const q = input.value.trim();
+  if (!q) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+  answerEl.style.display = 'block';
+  answerEl.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div>';
+
+  const m = meetings[currentMeeting];
+  const prompt = `You are a meeting assistant. Answer the following question based ONLY on this meeting context. Be concise and specific.\n\nMeeting: "${m.title}" on ${m.date}\n\nContext:\n${m.context}\n\nTranscript excerpts:\n${m.transcript.map(t => `[${t.time}] ${t.speaker}: ${t.text}`).join('\n')}\n\nActions:\n${m.actions.map(a => `- ${a.text} (${a.owner})`).join('\n')}\n\nQuestion: ${q}\n\nAnswer directly and concisely in 2-4 sentences.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.map(c => c.text || '').join('') || 'Unable to find an answer.';
+    answerEl.textContent = text;
+  } catch(e) {
+    answerEl.textContent = 'Could not reach AI service. Please try again.';
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Ask ✦';
+}
+
+// Init
+renderMeeting(0);
+</script>
+</body>
+</html>
